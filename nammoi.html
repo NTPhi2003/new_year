@@ -38,13 +38,31 @@
             text-shadow: 0 0 20px rgba(255, 255, 255, 0.8),
                          0 0 40px rgba(255, 100, 100, 0.6),
                          0 0 60px rgba(255, 50, 50, 0.4);
-            opacity: 0;
+            opacity: 1;
             z-index: 2;
             padding: 15px;
-            animation: fadeInOut 5s ease-in-out;
             max-width: 90%;
             line-height: 1.4;
             word-wrap: break-word;
+        }
+
+        .message .cursor {
+            display: inline-block;
+            width: 3px;
+            height: 1em;
+            background-color: #fff;
+            margin-left: 5px;
+            animation: blink 0.7s infinite;
+            vertical-align: middle;
+        }
+
+        @keyframes blink {
+            0%, 49% {
+                opacity: 1;
+            }
+            50%, 100% {
+                opacity: 0;
+            }
         }
 
         .message.show {
@@ -481,8 +499,6 @@
     <div class="slideshow-container" id="slideshowContainer">
         <button class="slideshow-close" id="slideshowClose">✕</button>
         <div class="slideshow-counter" id="slideshowCounter">1 / 1</div>
-        <button class="slideshow-nav prev" id="slideshowPrev">‹</button>
-        <button class="slideshow-nav next" id="slideshowNext">›</button>
         <div class="photo-frame" id="photoFrame">
             <img id="slideshowImg" src="" alt="Ảnh kỷ niệm">
             <div class="photo-caption" id="photoCaption">Kỷ niệm đẹp của chúng mình 💕</div>
@@ -730,7 +746,7 @@
         
         const imageCaptions = [
             'Kỷ niệm đẹp bên nhau 💕✨',
-            'Những khoảnh khắc hạ nh phúc nhất 😊❤️',
+            'Những khoảnh khắc hạnh phúc nhất 😊❤️',
             'Cùng nhau đi khắp thế gian 🌎💑',
             'Nụ cười tỏ rạng của em 😄💖',
             'Luôn bên cạnh nhau mãi mãi 🥰💞',
@@ -765,30 +781,53 @@
 
             const messageDiv = document.createElement('div');
             messageDiv.className = 'message';
-            messageDiv.textContent = text;
             document.body.appendChild(messageDiv);
 
-            setTimeout(() => {
-                messageDiv.classList.add('show');
-            }, 100);
+            // Typewriter effect
+            let charIndex = 0;
+            const textSpan = document.createElement('span');
+            const cursorSpan = document.createElement('span');
+            cursorSpan.className = 'cursor';
+            messageDiv.appendChild(textSpan);
+            messageDiv.appendChild(cursorSpan);
 
-            // Add hearts for romantic messages
-            if (currentMessageIndex > 0) {
-                createHearts();
+            function typeWriter() {
+                if (charIndex < text.length) {
+                    textSpan.textContent += text.charAt(charIndex);
+                    charIndex++;
+                    setTimeout(typeWriter, 120); // Tốc độ gõ chữ (ms)
+                } else {
+                    // Remove cursor after typing is done
+                    setTimeout(() => {
+                        cursorSpan.remove();
+                    }, 500);
+                    
+                    // Add hearts for romantic messages
+                    if (currentMessageIndex > 0) {
+                        createHearts();
+                    }
+
+                    // Remove message after delay
+                    setTimeout(() => {
+                        messageDiv.style.opacity = '0';
+                        messageDiv.style.transition = 'opacity 1s';
+                        setTimeout(() => {
+                            messageDiv.remove();
+                            currentMessageIndex++;
+                            if (currentMessageIndex < messages.length) {
+                                setTimeout(() => showMessage(messages[currentMessageIndex]), 1000);
+                            } else {
+                                // Start slideshow after all messages
+                                setTimeout(() => {
+                                    startSlideshow();
+                                }, 2000);
+                            }
+                        }, 1000);
+                    }, 3000); // Thời gian hiển thị sau khi gõ xong
+                }
             }
 
-            setTimeout(() => {
-                messageDiv.remove();
-                currentMessageIndex++;
-                if (currentMessageIndex < messages.length) {
-                    setTimeout(() => showMessage(messages[currentMessageIndex]), 1000);
-                } else {
-                    // Start slideshow after all messages
-                    setTimeout(() => {
-                        startSlideshow();
-                    }, 2000);
-                }
-            }, 5000);
+            typeWriter();
         }
 
         function createHearts() {
@@ -999,37 +1038,13 @@
         }
         
         // Slideshow event listeners
-        document.getElementById('slideshowNext').addEventListener('click', () => {
-            if (isTransitioning) return;
-            clearInterval(slideshowInterval);
-            nextSlide();
-            slideshowInterval = setInterval(nextSlide, 4000);
-        });
-        
-        document.getElementById('slideshowPrev').addEventListener('click', () => {
-            if (isTransitioning) return;
-            clearInterval(slideshowInterval);
-            prevSlide();
-            slideshowInterval = setInterval(nextSlide, 4000);
-        });
-        
         document.getElementById('slideshowClose').addEventListener('click', closeSlideshow);
         
         // Keyboard navigation
         document.addEventListener('keydown', (e) => {
             const container = document.getElementById('slideshowContainer');
             if (container.classList.contains('active')) {
-                if (isTransitioning) return;
-                
-                if (e.key === 'ArrowRight') {
-                    clearInterval(slideshowInterval);
-                    nextSlide();
-                    slideshowInterval = setInterval(nextSlide, 4000);
-                } else if (e.key === 'ArrowLeft') {
-                    clearInterval(slideshowInterval);
-                    prevSlide();
-                    slideshowInterval = setInterval(nextSlide, 4000);
-                } else if (e.key === 'Escape') {
+                if (e.key === 'Escape') {
                     closeSlideshow();
                 }
             }
